@@ -3,7 +3,7 @@ name: CI/CD
 on:
   pull_request:
     branches:
-      - 'main'
+      - "main"
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: "16"
 
       - name: Cache dependencies
         id: cache
@@ -27,8 +27,10 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci --ignore-scripts
 
-      - name: Code check
+      - name: Eslint
         run: npm run lint
+
+      - name: Prettier
         run: npm run format
 
       - name: Build

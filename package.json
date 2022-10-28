@@ -2,12 +2,13 @@
   "name": "web-nodejs-labs",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/index.js",
-    "lint": "eslint .",
-    "format": "prettier .",
+    "start": "node dist/index.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint --fix src/**/*.ts",
+    "format": "prettier src/**/*.ts",
+    "format:fix": "prettier -w src/**/*.ts",
     "prepare": "husky install"
   },
   "keywords": [],
