@@ -1,12 +1,9 @@
 import http from "http";
-import util from "util";
-import router, { HttpMethod } from "./router.js";
+import router from "./router.js";
 import { helpers } from "./utils.js";
 
-console.log(util.inspect(router, false, null, true));
-
 const HOST = process.env.HOST || "localhost";
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = parseInt(process.env.PORT) || 3000;
 
 const contentTypeParsers = {
   "text/html": (data) => data,
@@ -18,7 +15,7 @@ const contentTypeParsers = {
       return {};
     }
   },
-  "x-www-form-urlencoded": (data) =>
+  "application/x-www-form-urlencoded": (data) =>
     Object.fromEntries(new URLSearchParams(data)),
 };
 
@@ -38,10 +35,11 @@ const server = new http.Server(async (req, res) => {
     if (payloadParser) payload = payloadParser(rawRequest);
   }
 
-  const handler = router.getHandler(
+  const { handler, params } = router.getHandlerAndParams(
     url.pathname,
-    req.method || HttpMethod.GET
+    req.method || "GET"
   );
+  req.params = params;
   handler(req, Object.assign(res, helpers), url, payload);
 });
 

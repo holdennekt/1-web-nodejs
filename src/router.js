@@ -2,18 +2,6 @@ import { fileURLToPath, pathToFileURL } from "url";
 import * as path from "path";
 import { readdir } from "fs/promises";
 
-export const HttpMethod = {
-  GET: "GET",
-  HEAD: "HEAD",
-  POST: "POST",
-  PUT: "PUT",
-  DELETE: "DELETE",
-  CONNECT: "CONNECT",
-  OPTIONS: "OPTIONS",
-  TRACE: "TRACE",
-  PATCH: "PATCH",
-}
-
 const notImplemented = (req, res) => {
   res.statusCode = 501;
   res.json({ err: "Not Implemented" });
@@ -25,9 +13,6 @@ function methodNotAllowed(req, res) {
 }
 
 class MyRouter {
-  tree;
-  routesDir;
-
   constructor(routesDir) {
     this.tree = this._getDefaultHandlers();
     this.routesDir = routesDir;
@@ -72,22 +57,26 @@ class MyRouter {
     }
   }
 
-  getHandler(urlPathname, method) {
+  getHandlerAndParams(urlPathname, method) {
+    const params = {};
     const treePath = urlPathname.split("/").filter((val) => val !== "");
     let treeNode = this.tree;
     for (const node of treePath) {
       if (!treeNode.children[node]) {
-        let dynamicUrlParameterNode;
+        let dynamicUrlParameterName, dynamicUrlParameterNode;
         for (const childKey in treeNode.children) {
           if (treeNode.children[childKey].isDynamicUrlParameter) {
+            dynamicUrlParameterName = childKey;
             dynamicUrlParameterNode = treeNode.children[childKey];
           }
         }
-        if (!dynamicUrlParameterNode) return notImplemented;
+        if (!dynamicUrlParameterNode)
+          return { handler: notImplemented, params };
         treeNode = dynamicUrlParameterNode;
+        params[dynamicUrlParameterName] = node;
       } else treeNode = treeNode.children[node];
     }
-    return treeNode.handlers[method] || methodNotAllowed;
+    return { handler: treeNode.handlers[method] || methodNotAllowed, params };
   }
 }
 
