@@ -1,66 +1,51 @@
 import { fileURLToPath, pathToFileURL } from "url";
 import * as path from "path";
 import { readdir } from "fs/promises";
-import { IncomingMessage, ServerResponse } from "http";
-import { helpers } from "./utils";
 
-export type MyServerResponse = ServerResponse & typeof helpers;
-export enum HttpMethod {
-  GET = "GET",
-  HEAD = "HEAD",
-  POST = "POST",
-  PUT = "PUT",
-  DELETE = "DELETE",
-  CONNECT = "CONNECT",
-  OPTIONS = "OPTIONS",
-  TRACE = "TRACE",
-  PATCH = "PATCH",
+export const HttpMethod = {
+  GET: "GET",
+  HEAD: "HEAD",
+  POST: "POST",
+  PUT: "PUT",
+  DELETE: "DELETE",
+  CONNECT: "CONNECT",
+  OPTIONS: "OPTIONS",
+  TRACE: "TRACE",
+  PATCH: "PATCH",
 }
-export type RouteHandler = (
-  req: IncomingMessage,
-  res: MyServerResponse,
-  url: URL,
-  payload: any
-) => void;
 
-type TreeNode = {
-  handlers: { [key in HttpMethod]: RouteHandler };
-  children: { [key: string]: TreeNode };
-  isDynamicUrlParameter?: boolean;
-};
-
-const notImplemented = (req: IncomingMessage, res: MyServerResponse) => {
+const notImplemented = (req, res) => {
   res.statusCode = 501;
   res.json({ err: "Not Implemented" });
 };
 
-function methodNotAllowed(req: IncomingMessage, res: MyServerResponse) {
+function methodNotAllowed(req, res) {
   res.statusCode = 405;
   res.json({ err: "Method Not Allowed" });
 }
 
 class MyRouter {
-  private tree: TreeNode;
-  private routesDir: string;
+  tree;
+  routesDir;
 
-  constructor(routesDir: string) {
-    this.tree = this.getDefaultHandlers();
+  constructor(routesDir) {
+    this.tree = this._getDefaultHandlers();
     this.routesDir = routesDir;
   }
 
-  private getDefaultHandlers() {
+  _getDefaultHandlers() {
     return {
-      handlers: {} as { [key in HttpMethod]: RouteHandler },
+      handlers: {},
       children: {},
     };
   }
 
-  private defineHandlers(relativePath: string, moduleDefault: any) {
+  _defineHandlers(relativePath, moduleDefault) {
     const treePath = relativePath.split(path.sep).filter((val) => val !== "");
     let treeNode = this.tree;
     for (const node of treePath) {
       if (!treeNode.children[node]) {
-        treeNode.children[node] = this.getDefaultHandlers();
+        treeNode.children[node] = this._getDefaultHandlers();
       }
       treeNode = treeNode.children[node];
     }
@@ -70,7 +55,7 @@ class MyRouter {
     }
   }
 
-  async loadRoutes(basePath: string, dirName: string): Promise<void> {
+  async loadRoutes(basePath, dirName) {
     const relativePath = path.join(basePath, dirName);
     const workDir = path.join(this.routesDir, relativePath);
 
@@ -82,17 +67,17 @@ class MyRouter {
       if (dirEntry.isFile() && dirEntry.name === "index.js") {
         const modulePath = pathToFileURL(path.join(workDir, dirEntry.name));
         const module = await import(modulePath.href);
-        this.defineHandlers(relativePath, module.default);
+        this._defineHandlers(relativePath, module.default);
       }
     }
   }
 
-  getHandler(urlPathname: string, method: HttpMethod): RouteHandler {
+  getHandler(urlPathname, method) {
     const treePath = urlPathname.split("/").filter((val) => val !== "");
     let treeNode = this.tree;
     for (const node of treePath) {
       if (!treeNode.children[node]) {
-        let dynamicUrlParameterNode: TreeNode = undefined as never;
+        let dynamicUrlParameterNode;
         for (const childKey in treeNode.children) {
           if (treeNode.children[childKey].isDynamicUrlParameter) {
             dynamicUrlParameterNode = treeNode.children[childKey];

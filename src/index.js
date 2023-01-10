@@ -8,19 +8,17 @@ console.log(util.inspect(router, false, null, true));
 const HOST = process.env.HOST || "localhost";
 const PORT = Number(process.env.PORT) || 3000;
 
-const contentTypeParsers: {
-  [key: string]: ((data: string) => any) | undefined;
-} = {
-  "text/html": (data: string) => data,
-  "text/plain": (data: string) => data,
-  "application/json": (data: string) => {
+const contentTypeParsers = {
+  "text/html": (data) => data,
+  "text/plain": (data) => data,
+  "application/json": (data) => {
     try {
       return JSON.parse(data);
     } catch {
       return {};
     }
   },
-  "x-www-form-urlencoded": (data: string) =>
+  "x-www-form-urlencoded": (data) =>
     Object.fromEntries(new URLSearchParams(data)),
 };
 
@@ -42,7 +40,7 @@ const server = new http.Server(async (req, res) => {
 
   const handler = router.getHandler(
     url.pathname,
-    (req.method as HttpMethod) || HttpMethod.GET
+    req.method || HttpMethod.GET
   );
   handler(req, Object.assign(res, helpers), url, payload);
 });
