@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json /usr/src/app/
 
-RUN npm ci
+RUN npm i typescript
 
 COPY . /usr/src/app/
 
