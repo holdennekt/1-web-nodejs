@@ -26,6 +26,7 @@ export type RouteHandler = (
 type TreeNode = {
   handlers: { [key in HttpMethod]: RouteHandler };
   children: { [key: string]: TreeNode };
+  isDynamicUrlParameter?: boolean;
 };
 
 const notImplemented = (req: IncomingMessage, res: MyServerResponse) => {
@@ -54,7 +55,7 @@ class MyRouter {
     };
   }
 
-  private defineHandlers(relativePath: string, module: any) {
+  private defineHandlers(relativePath: string, moduleDefault: any) {
     const treePath = relativePath.split(path.sep).filter((val) => val !== "");
     let treeNode = this.tree;
     for (const node of treePath) {
@@ -63,7 +64,10 @@ class MyRouter {
       }
       treeNode = treeNode.children[node];
     }
-    Object.assign(treeNode.handlers, module);
+    Object.assign(treeNode.handlers, moduleDefault.handlers);
+    if (moduleDefault.isDynamicURLParameter) {
+      treeNode.isDynamicUrlParameter = moduleDefault.isDynamicURLParameter;
+    }
   }
 
   async loadRoutes(basePath: string, dirName: string): Promise<void> {
@@ -78,7 +82,7 @@ class MyRouter {
       if (dirEntry.isFile() && dirEntry.name === "index.js") {
         const modulePath = pathToFileURL(path.join(workDir, dirEntry.name));
         const module = await import(modulePath.href);
-        this.defineHandlers(relativePath, module);
+        this.defineHandlers(relativePath, module.default);
       }
     }
   }
@@ -87,8 +91,16 @@ class MyRouter {
     const treePath = urlPathname.split("/").filter((val) => val !== "");
     let treeNode = this.tree;
     for (const node of treePath) {
-      if (!treeNode.children[node]) return notImplemented;
-      treeNode = treeNode.children[node];
+      if (!treeNode.children[node]) {
+        let dynamicUrlParameterNode: TreeNode = undefined as never;
+        for (const childKey in treeNode.children) {
+          if (treeNode.children[childKey].isDynamicUrlParameter) {
+            dynamicUrlParameterNode = treeNode.children[childKey];
+          }
+        }
+        if (!dynamicUrlParameterNode) return notImplemented;
+        treeNode = dynamicUrlParameterNode;
+      } else treeNode = treeNode.children[node];
     }
     return treeNode.handlers[method] || methodNotAllowed;
   }

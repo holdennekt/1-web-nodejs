@@ -28,4 +28,4 @@ function POST(
   res.json({ data: "POST /time", payload });
 }
 
-export { GET, OPTIONS, POST };
+export default { handlers: { GET, OPTIONS, POST } };

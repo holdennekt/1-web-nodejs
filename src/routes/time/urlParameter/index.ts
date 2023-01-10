@@ -31,4 +31,7 @@ function POST(
   res.json({ data: `POST /time/${urlParameter}`, payload });
 }
 
-export { GET, OPTIONS, POST };
+export default {
+  handlers: { GET, OPTIONS, POST },
+  isDynamicURLParameter: true,
+};
