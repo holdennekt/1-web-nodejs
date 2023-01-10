@@ -46,3 +46,16 @@ const server = new http.Server(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log("Server succesfully started on port", PORT);
 });
+
+server.on("clientError", (err, socket) => {
+  socket.end("HTTP/1.1 400 bad request\r\n\r\n");
+});
+
+process.on("SIGINT", () => {
+  server.close((error) => {
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+  });
+});
