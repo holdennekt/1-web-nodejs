@@ -1,1 +1,10 @@
 .git
+.editorconfig
+.eslintcache
+.eslintrc.json
+.gitignore
+.prettierrc.json
+.github
+.husky
+dist
+node_modules
