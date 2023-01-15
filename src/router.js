@@ -16,6 +16,11 @@ class MyRouter {
   constructor(routesDir) {
     this.tree = this._getDefaultHandlers();
     this.routesDir = routesDir;
+    return new Promise((resolve, reject) => {
+      this._loadRoutes(path.sep, "")
+        .then(() => resolve(this))
+        .catch(reject);
+    });
   }
 
   _getDefaultHandlers() {
@@ -40,14 +45,14 @@ class MyRouter {
     }
   }
 
-  async loadRoutes(basePath, dirName) {
+  async _loadRoutes(basePath, dirName) {
     const relativePath = path.join(basePath, dirName);
     const workDir = path.join(this.routesDir, relativePath);
 
     const dir = await readdir(workDir, { withFileTypes: true });
     for (const dirEntry of dir) {
       if (dirEntry.isDirectory()) {
-        await this.loadRoutes(relativePath, dirEntry.name);
+        await this._loadRoutes(relativePath, dirEntry.name);
       }
       if (dirEntry.isFile() && dirEntry.name === "index.js") {
         const modulePath = pathToFileURL(path.join(workDir, dirEntry.name));
@@ -85,7 +90,6 @@ const __dirname = path.dirname(__filename);
 
 const routesDir = path.join(__dirname, "routes");
 
-const router = new MyRouter(routesDir);
-await router.loadRoutes(path.sep, "");
+const router = await new MyRouter(routesDir);
 
 export default router;
